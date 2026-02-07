@@ -67,6 +67,14 @@ if [ "$(id -u)" -eq 0 ]; then
     echo "Created user: $AGENT_USER"
   fi
 
+  # Grant agent passwordless sudo (needed for `update` to install deps)
+  SUDOERS_FILE="/etc/sudoers.d/$AGENT_USER"
+  if [ ! -f "$SUDOERS_FILE" ]; then
+    echo "$AGENT_USER ALL=(ALL) NOPASSWD:ALL" > "$SUDOERS_FILE"
+    chmod 440 "$SUDOERS_FILE"
+    echo "Granted passwordless sudo to $AGENT_USER"
+  fi
+
   # Copy root SSH keys so the same key works for the agent user
   AGENT_SSH_DIR="/home/$AGENT_USER/.ssh"
   mkdir -p "$AGENT_SSH_DIR"

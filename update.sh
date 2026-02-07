@@ -79,11 +79,14 @@ else
   [ ${#MISSING_PIP[@]} -gt 0 ] && echo "Missing Python packages: ${MISSING_PIP[*]}"
 
   # Determine if we can install (root or passwordless sudo)
+  # Note: stdin from /dev/null prevents any interactive password prompt
   SUDO=""
+  CAN_INSTALL=false
   if [ "$(id -u)" -eq 0 ]; then
-    SUDO=""
-  elif command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
+    CAN_INSTALL=true
+  elif command -v sudo &>/dev/null && sudo -n true </dev/null 2>/dev/null; then
     SUDO="sudo"
+    CAN_INSTALL=true
   else
     echo ""
     echo "WARNING: Cannot install automatically (no passwordless sudo)."
@@ -91,8 +94,7 @@ else
     echo ""
   fi
 
-  # Install if we have permission
-  if [ "$(id -u)" -eq 0 ] || { command -v sudo &>/dev/null && sudo -n true 2>/dev/null; }; then
+  if [ "$CAN_INSTALL" = true ]; then
     echo "Installing missing dependencies..."
 
     if [ ${#MISSING_APT[@]} -gt 0 ]; then
