@@ -48,17 +48,15 @@ if [ "$(id -u)" -eq 0 ]; then
     echo "Copied SSH keys for $AGENT_USER"
   fi
 
-  # Copy repo to agent user's home
-  REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  # Clone repo to agent user's home (with .git intact for updates)
+  REPO_URL="https://github.com/PatrickRogg/personal-agent.git"
   DEST="/home/$AGENT_USER/personal-agent"
 
   if [ ! -d "$DEST" ]; then
-    cp -r "$REPO_DIR" "$DEST"
+    su - "$AGENT_USER" -c "git clone $REPO_URL $DEST"
   else
-    # Update existing copy
-    rsync -a --exclude='.git' "$REPO_DIR/" "$DEST/"
+    chown -R "$AGENT_USER:$AGENT_USER" "$DEST"
   fi
-  chown -R "$AGENT_USER:$AGENT_USER" "$DEST"
 
   echo ""
   echo "=== Switching to $AGENT_USER user ==="
@@ -85,6 +83,14 @@ if ! grep -q 'alias claudey' ~/.bashrc; then
   echo "Added claudey alias to ~/.bashrc"
 fi
 
+# update alias
+if ! grep -q 'alias update=' ~/.bashrc; then
+  echo '' >> ~/.bashrc
+  echo '# Pull latest repo changes and sync workspace' >> ~/.bashrc
+  echo "alias update=\"bash $REPO_DIR/update.sh\"" >> ~/.bashrc
+  echo "Added update alias to ~/.bashrc"
+fi
+
 # Auto-navigate to agent workspace on login
 if ! grep -q 'cd.*personal-agent/agent' ~/.bashrc; then
   echo '' >> ~/.bashrc
@@ -93,64 +99,8 @@ if ! grep -q 'cd.*personal-agent/agent' ~/.bashrc; then
   echo "Added auto-cd to ~/.bashrc"
 fi
 
-# Agent directories
-mkdir -p "$AGENT_DIR/drop"
-mkdir -p "$AGENT_DIR/knowledge"
-mkdir -p "$AGENT_DIR/memory"
-mkdir -p "$AGENT_DIR/output"
-mkdir -p "$AGENT_DIR/scripts"
-
-# .gitkeep files
-touch "$AGENT_DIR/drop/.gitkeep"
-touch "$AGENT_DIR/knowledge/.gitkeep"
-touch "$AGENT_DIR/memory/.gitkeep"
-touch "$AGENT_DIR/output/.gitkeep"
-touch "$AGENT_DIR/scripts/.gitkeep"
-
-# Seed memory files (only if they don't exist)
-if [ ! -f "$AGENT_DIR/memory/_index.md" ]; then
-  cat > "$AGENT_DIR/memory/_index.md" << 'SEED'
-# Memory Index
-
-Agent-maintained catalog. One line per entry.
-
-- [me.md](me.md) — Core info about the user
-SEED
-fi
-
-if [ ! -f "$AGENT_DIR/memory/me.md" ]; then
-  cat > "$AGENT_DIR/memory/me.md" << 'SEED'
-# Me
-
-<!-- The agent builds this file over time as it learns about you. -->
-SEED
-fi
-
-# VM-specific .gitignore (track content dirs, unlike dev repo)
-cat > "$AGENT_DIR/.gitignore" << 'VMGITIGNORE'
-# Ephemeral input
-drop/*
-!drop/.gitkeep
-
-# Tool artifacts
-.claude/settings.local.json
-node_modules/
-.env
-VMGITIGNORE
-
-# Local git repo for tracking agent changes
-if [ ! -d "$AGENT_DIR/.git" ]; then
-  # Remove the parent dev repo's .git so agent/ is standalone
-  [ -d "$REPO_DIR/.git" ] && rm -rf "$REPO_DIR/.git"
-
-  cd "$AGENT_DIR"
-  git config user.name "Agent"
-  git config user.email "agent@local"
-  git init
-  git add -A
-  git commit -m "Initial workspace state"
-  echo "Initialized local git repo in $AGENT_DIR"
-fi
+# Run update.sh to set up workspace (dirs, seed files, etc.)
+bash "$REPO_DIR/update.sh"
 
 # Convenience symlink for shorter path
 ln -sfn "$AGENT_DIR" "/home/$(whoami)/workspace"
@@ -172,4 +122,5 @@ echo "  1. SSH in as '$AGENT_USER':  ssh $AGENT_USER@<your-vm-ip>"
 echo "  2. Run: claude /login"
 echo "  3. Open ~/workspace in VSCode via Remote SSH"
 echo "  4. Or from terminal: claudey -p 'your prompt here'"
+echo "  5. To pull updates: update"
 echo ""
