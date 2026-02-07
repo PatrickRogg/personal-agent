@@ -1,7 +1,13 @@
-workspace/inbox/*
-workspace/output/*
-!workspace/inbox/.gitkeep
-!workspace/output/.gitkeep
+drop/*
+!drop/.gitkeep
+output/*
+!output/.gitkeep
+knowledge/*
+!knowledge/.gitkeep
+memory/*
+!memory/.gitkeep
+!memory/_index.md
+!memory/me.md
 .agents/settings.local.json
 node_modules/
 .env

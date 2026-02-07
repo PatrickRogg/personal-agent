@@ -15,9 +15,9 @@ This is the agent you interact with when developing the project.
 
 **Where:** Hetzner VM via VSCode Remote SSH, working directory = `agent/`
 **AGENTS.md:** `agent/AGENTS.md`
-**Purpose:** Personal AI assistant — draft emails, do research, manage memory, process inbox files
+**Purpose:** Personal AI assistant — draft emails, do research, learn from files, process dropped content
 **Tools:** Filesystem (scoped to `agent/`), WebSearch, WebFetch
-**Skills:** `/draft-email`, `/research`, `/remember`, `/summarize`
+**Skills:** `/learn`, `/draft-email`, `/research`, `/summarize`
 **Alias:** `claudey` (runs with `--dangerously-skip-permissions` for unattended use)
 
 This is the agent that runs on the VM as your day-to-day assistant.
@@ -39,6 +39,6 @@ The VM Agent never sees the repo root, `AGENTS.md`, or the development instructi
 ## Setup Flow
 
 1. Clone this repo on the Hetzner VM
-2. Run `agent/setup.sh` to install dependencies
+2. Run `./setup.sh` to install dependencies
 3. Open `agent/` (not the repo root) in VSCode Remote SSH
 4. Claude Code loads `agent/AGENTS.md` and the skills automatically

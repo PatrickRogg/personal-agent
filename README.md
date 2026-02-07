@@ -1,6 +1,6 @@
 # Personal AI Agent
 
-A personal AI assistant running on a Hetzner VM. SSH in with VSCode Remote SSH, use the Claude Code extension as the chat interface. Drop files, ask questions, draft emails, do research, keep memories.
+A personal AI assistant running on a Hetzner VM. SSH in with VSCode Remote SSH, use the Claude Code extension as the chat interface. Drop files, share links, ask questions, draft emails, do research — the agent learns and remembers over time.
 
 ## Architecture
 
@@ -9,12 +9,11 @@ Hetzner VM (Ubuntu 24.04)
 ├── setup.sh              ← One-time VM provisioning
 └── agent/                ← VM Agent's working directory
     ├── AGENTS.md         ← Agent personality + rules
-    ├── .agents/skills/   ← /draft-email, /research, /remember, /summarize
-    └── workspace/
-        ├── memory/       ← Persistent agent memory
-        ├── templates/    ← Email templates, style references
-        ├── inbox/        ← Drop files here for processing
-        └── output/       ← Agent-generated content
+    ├── .agents/skills/   ← /learn, /draft-email, /research, /summarize
+    ├── drop/             ← Drop files here — agent processes them
+    ├── knowledge/        ← Raw content archive (originals preserved)
+    ├── memory/           ← Quick-reference summaries + key facts
+    └── output/           ← Agent-generated content
 
 claudey                   ← alias: claude --dangerously-skip-permissions
 ```
@@ -31,16 +30,16 @@ cd personal-agent
 claude /login
 
 # Open agent/ in VSCode via Remote SSH, or:
-claudey -p "summarize my inbox"
+claudey -p "learn from my drop folder"
 ```
 
 ## How It Works
 
 1. Open `agent/` in VSCode via Remote SSH
 2. Claude Code loads `AGENTS.md` and skills automatically
-3. Chat with Claude — it reads/writes workspace files, searches the web, drafts things
-4. Drop files into `workspace/inbox/`, ask Claude to process them
-5. Claude maintains memory in `workspace/memory/`
+3. Chat with Claude — it reads/writes files, searches the web, drafts things
+4. Drop files into `drop/` or share links — the agent archives the original in `knowledge/` and creates quick-reference entries in `memory/`
+5. When working, Claude scans `memory/` first for fast context, then dives into `knowledge/` for full details
 6. For unattended tasks: `claudey -p "your prompt here"` from any directory
 
 ## Two Agents

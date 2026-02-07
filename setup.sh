@@ -18,7 +18,21 @@ echo "Node.js: $(node --version)"
 if ! command -v claude &> /dev/null; then
   sudo npm install -g @anthropic-ai/claude-code
 fi
+
+if ! command -v claude &> /dev/null; then
+  echo "ERROR: Claude Code failed to install. Check npm output above."
+  exit 1
+fi
 echo "Claude Code: $(claude --version)"
+
+# API key check
+if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+  echo ""
+  echo "WARNING: ANTHROPIC_API_KEY is not set."
+  echo "  Set it in your shell:  export ANTHROPIC_API_KEY=sk-..."
+  echo "  Or add it to ~/.bashrc for persistence."
+  echo ""
+fi
 
 # claudey alias (always runs from agent/ directory)
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,47 +44,34 @@ if ! grep -q 'alias claudey' ~/.bashrc; then
   echo "Added claudey alias to ~/.bashrc (working dir: $AGENT_DIR)"
 fi
 
-# Workspace dirs
-mkdir -p "$AGENT_DIR/workspace/memory"
-mkdir -p "$AGENT_DIR/workspace/templates"
-mkdir -p "$AGENT_DIR/workspace/inbox"
-mkdir -p "$AGENT_DIR/workspace/output"
+# Agent directories
+mkdir -p "$AGENT_DIR/drop"
+mkdir -p "$AGENT_DIR/knowledge"
+mkdir -p "$AGENT_DIR/memory"
+mkdir -p "$AGENT_DIR/output"
+
+# .gitkeep files
+touch "$AGENT_DIR/drop/.gitkeep"
+touch "$AGENT_DIR/knowledge/.gitkeep"
+touch "$AGENT_DIR/memory/.gitkeep"
+touch "$AGENT_DIR/output/.gitkeep"
 
 # Seed memory files (only if they don't exist)
-if [ ! -f "$AGENT_DIR/workspace/memory/about-me.md" ]; then
-  cat > "$AGENT_DIR/workspace/memory/about-me.md" << 'SEED'
-# About Me
+if [ ! -f "$AGENT_DIR/memory/_index.md" ]; then
+  cat > "$AGENT_DIR/memory/_index.md" << 'SEED'
+# Memory Index
 
-<!-- Fill this in so the agent knows who you are -->
+Agent-maintained catalog. One line per entry.
 
-- Name:
-- Role:
-- Company:
-- Key interests:
+- [me.md](me.md) — Core info about the user
 SEED
 fi
 
-if [ ! -f "$AGENT_DIR/workspace/memory/contacts.md" ]; then
-  cat > "$AGENT_DIR/workspace/memory/contacts.md" << 'SEED'
-# Contacts
+if [ ! -f "$AGENT_DIR/memory/me.md" ]; then
+  cat > "$AGENT_DIR/memory/me.md" << 'SEED'
+# Me
 
-<!-- The agent will add people here as it learns about them -->
-SEED
-fi
-
-if [ ! -f "$AGENT_DIR/workspace/memory/projects.md" ]; then
-  cat > "$AGENT_DIR/workspace/memory/projects.md" << 'SEED'
-# Active Projects
-
-<!-- The agent will track your projects here -->
-SEED
-fi
-
-if [ ! -f "$AGENT_DIR/workspace/memory/preferences.md" ]; then
-  cat > "$AGENT_DIR/workspace/memory/preferences.md" << 'SEED'
-# Preferences
-
-<!-- Writing tone, email style, formatting preferences, etc. -->
+<!-- The agent builds this file over time as it learns about you. -->
 SEED
 fi
 
@@ -81,5 +82,5 @@ echo "Next steps:"
 echo "  1. Run: claude /login"
 echo "  2. Open the agent/ folder in VSCode via Remote SSH"
 echo "  3. Use Claude Code extension to chat"
-echo "  4. Or from terminal: claudey -p 'your prompt here' (auto-cds to agent/)"
+echo "  4. Or from terminal: claudey -p 'your prompt here'"
 echo ""

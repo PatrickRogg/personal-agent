@@ -1,15 +1,12 @@
 # /draft-email
 
-Draft an email based on my writing style.
+Draft an email based on my writing style and knowledge.
 
 ## Steps
 
-1. Read `workspace/memory/preferences.md` for my writing tone and style
-2. Check `workspace/templates/` for any relevant email templates
-3. Draft the email matching my style
-4. Save to `workspace/output/YYYY-MM-DD-email-<brief-description>.md`
-5. Show a brief summary in chat and the file path
-
-## Templates
-
-If there are example emails or templates in `workspace/templates/`, use them as style references. If not, rely on the writing style captured in preferences.md.
+1. Read `memory/me.md` for writing tone, style, and preferences
+2. Check `memory/_index.md` for relevant context (e.g., if emailing a known contact, read their memory file; if about a product, read the product memory)
+3. If you need more detail than the memory provides, follow links to the full documents in `knowledge/`
+4. Draft the email matching my style
+5. Save to `output/YYYY-MM-DD-email-<brief-description>.md`
+6. Show a brief summary in chat and the file path
