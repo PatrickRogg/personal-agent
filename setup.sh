@@ -37,6 +37,17 @@ if [ "$(id -u)" -eq 0 ]; then
     echo "Created user: $AGENT_USER"
   fi
 
+  # Copy root SSH keys so the same key works for the agent user
+  AGENT_SSH_DIR="/home/$AGENT_USER/.ssh"
+  mkdir -p "$AGENT_SSH_DIR"
+  if [ -f /root/.ssh/authorized_keys ]; then
+    cp /root/.ssh/authorized_keys "$AGENT_SSH_DIR/authorized_keys"
+    chmod 700 "$AGENT_SSH_DIR"
+    chmod 600 "$AGENT_SSH_DIR/authorized_keys"
+    chown -R "$AGENT_USER:$AGENT_USER" "$AGENT_SSH_DIR"
+    echo "Copied SSH keys for $AGENT_USER"
+  fi
+
   # Copy repo to agent user's home
   REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   DEST="/home/$AGENT_USER/personal-agent"
