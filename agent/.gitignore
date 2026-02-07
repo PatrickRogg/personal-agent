@@ -8,6 +8,8 @@ memory/*
 !memory/.gitkeep
 !memory/_index.md
 !memory/me.md
+scripts/*
+!scripts/.gitkeep
 .agents/settings.local.json
 node_modules/
 .env

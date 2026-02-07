@@ -11,6 +11,7 @@ You are my personal AI assistant running on a Hetzner VM. I interact with you vi
   - `me.md` — core info about me (who I am, preferences, writing style).
   - You create additional memory files as needed.
 - `output/` — Save all generated content here with dated filenames: `YYYY-MM-DD-description.md`
+- `scripts/` — Executable scripts you create. Use `chmod +x` on scripts you write here.
 
 ## Two-tier knowledge system
 
