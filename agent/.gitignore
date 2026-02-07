@@ -1,0 +1,7 @@
+workspace/inbox/*
+workspace/output/*
+!workspace/inbox/.gitkeep
+!workspace/output/.gitkeep
+.agents/settings.local.json
+node_modules/
+.env
