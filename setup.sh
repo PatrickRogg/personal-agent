@@ -102,6 +102,20 @@ fi
 # Run update.sh to set up workspace (dirs, seed files, etc.)
 bash "$REPO_DIR/update.sh"
 
+# Create local my-agent branch for agent content (first-run only)
+cd "$REPO_DIR"
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" = "main" ]; then
+  echo "Creating my-agent branch..."
+  git checkout -b my-agent
+
+  # Force-add agent content (overrides .gitignore for this branch)
+  cd "$AGENT_DIR"
+  git add -f memory/ knowledge/ scripts/ output/ drop/ 2>/dev/null || true
+  cd "$REPO_DIR"
+  git commit -m "Initial agent workspace state" || true
+fi
+
 # Convenience symlink for shorter path
 ln -sfn "$AGENT_DIR" "/home/$(whoami)/workspace"
 
