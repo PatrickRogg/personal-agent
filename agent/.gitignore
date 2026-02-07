@@ -11,6 +11,6 @@ memory/*
 scripts/*
 !scripts/.gitkeep
 !scripts/defaults/
-.agents/settings.local.json
+.claude/settings.local.json
 node_modules/
 .env

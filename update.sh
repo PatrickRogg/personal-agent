@@ -127,6 +127,20 @@ done
 # Make default scripts executable
 chmod +x "$AGENT_DIR/scripts/defaults/"*.sh 2>/dev/null || true
 
+# Seed Claude Code settings (bypass permissions for unattended use)
+SETTINGS_FILE="$AGENT_DIR/.claude/settings.local.json"
+if [ ! -f "$SETTINGS_FILE" ]; then
+  mkdir -p "$AGENT_DIR/.claude"
+  cat > "$SETTINGS_FILE" << 'SEED'
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  }
+}
+SEED
+  echo "Seeded .claude/settings.local.json"
+fi
+
 # Seed memory files (only if missing)
 if [ ! -f "$AGENT_DIR/memory/_index.md" ]; then
   cat > "$AGENT_DIR/memory/_index.md" << 'SEED'
