@@ -41,51 +41,80 @@ else
   echo "No git remote found, skipping fetch."
 fi
 
-# Install missing dependencies (requires sudo, skips if not available)
-install_deps() {
-  local NEEDED_PKGS=()
-  local APT_PKGS=(poppler-utils tesseract-ocr tesseract-ocr-eng pandoc catdoc jq p7zip-full imagemagick python3-pip python3-venv libxml2-utils)
+# Check and install missing dependencies
+echo ""
+echo "--- Checking dependencies ---"
 
-  for pkg in "${APT_PKGS[@]}"; do
-    if ! dpkg -s "$pkg" &>/dev/null; then
-      NEEDED_PKGS+=("$pkg")
-    fi
-  done
+APT_PKGS=(poppler-utils tesseract-ocr tesseract-ocr-eng pandoc catdoc jq p7zip-full imagemagick python3-pip python3-venv libxml2-utils)
+AGENT_VENV="/opt/agent-venv"
+PIP_PKGS=(python-docx python-pptx openpyxl xlsx2csv pdfplumber Pillow pytesseract)
 
-  if [ ${#NEEDED_PKGS[@]} -gt 0 ]; then
-    echo "Installing missing packages: ${NEEDED_PKGS[*]}"
-    sudo apt-get update -qq
-    sudo apt-get install -y "${NEEDED_PKGS[@]}"
+# Check which apt packages are missing
+MISSING_APT=()
+for pkg in "${APT_PKGS[@]}"; do
+  if ! dpkg -s "$pkg" &>/dev/null; then
+    MISSING_APT+=("$pkg")
   fi
+done
 
-  # Python venv for file-processing scripts
-  AGENT_VENV="/opt/agent-venv"
-  if [ ! -d "$AGENT_VENV" ]; then
-    echo "Creating Python venv for file-processing tools..."
-    sudo python3 -m venv "$AGENT_VENV"
-    sudo chmod -R a+rX "$AGENT_VENV"
-  fi
-
-  # Install/update Python packages
-  local PIP_PKGS=(python-docx python-pptx openpyxl xlsx2csv pdfplumber Pillow pytesseract)
-  local MISSING_PIP=false
+# Check Python venv and packages
+VENV_EXISTS=false
+MISSING_PIP=()
+if [ -d "$AGENT_VENV" ]; then
+  VENV_EXISTS=true
   for pkg in "${PIP_PKGS[@]}"; do
-    if ! "$AGENT_VENV/bin/pip" show "$pkg" &>/dev/null; then
-      MISSING_PIP=true
-      break
+    if ! "$AGENT_VENV/bin/pip" show "$pkg" &>/dev/null 2>&1; then
+      MISSING_PIP+=("$pkg")
     fi
   done
+fi
 
-  if [ "$MISSING_PIP" = true ]; then
-    echo "Installing missing Python packages..."
-    sudo "$AGENT_VENV/bin/pip" install --upgrade pip -q
-    sudo "$AGENT_VENV/bin/pip" install "${PIP_PKGS[@]}" -q
-    sudo chmod -R a+rX "$AGENT_VENV"
+# Report status
+if [ ${#MISSING_APT[@]} -eq 0 ] && [ "$VENV_EXISTS" = true ] && [ ${#MISSING_PIP[@]} -eq 0 ]; then
+  echo "All dependencies installed."
+else
+  # Something is missing — report what
+  [ ${#MISSING_APT[@]} -gt 0 ] && echo "Missing apt packages: ${MISSING_APT[*]}"
+  [ "$VENV_EXISTS" = false ] && echo "Missing Python venv at $AGENT_VENV"
+  [ ${#MISSING_PIP[@]} -gt 0 ] && echo "Missing Python packages: ${MISSING_PIP[*]}"
+
+  # Determine if we can install (root or passwordless sudo)
+  SUDO=""
+  if [ "$(id -u)" -eq 0 ]; then
+    SUDO=""
+  elif command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
+    SUDO="sudo"
+  else
+    echo ""
+    echo "WARNING: Cannot install automatically (no passwordless sudo)."
+    echo "  Run as root:  sudo bash $REPO_DIR/setup.sh"
+    echo ""
   fi
-}
 
-if command -v sudo &>/dev/null; then
-  install_deps || echo "Note: Some dependencies could not be installed (may need root). Run setup.sh as root to install all dependencies."
+  # Install if we have permission
+  if [ "$(id -u)" -eq 0 ] || { command -v sudo &>/dev/null && sudo -n true 2>/dev/null; }; then
+    echo "Installing missing dependencies..."
+
+    if [ ${#MISSING_APT[@]} -gt 0 ]; then
+      $SUDO apt-get update -qq
+      $SUDO apt-get install -y "${MISSING_APT[@]}"
+    fi
+
+    if [ "$VENV_EXISTS" = false ]; then
+      $SUDO python3 -m venv "$AGENT_VENV"
+      $SUDO chmod -R a+rX "$AGENT_VENV"
+      # Fresh venv — install all pip packages
+      MISSING_PIP=("${PIP_PKGS[@]}")
+    fi
+
+    if [ ${#MISSING_PIP[@]} -gt 0 ]; then
+      $SUDO "$AGENT_VENV/bin/pip" install --upgrade pip -q
+      $SUDO "$AGENT_VENV/bin/pip" install "${MISSING_PIP[@]}" -q
+      $SUDO chmod -R a+rX "$AGENT_VENV"
+    fi
+
+    echo "Dependencies installed."
+  fi
 fi
 
 # Ensure workspace directories exist (idempotent)
