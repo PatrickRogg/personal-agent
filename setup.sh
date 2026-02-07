@@ -1,47 +1,77 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "=== Personal Agent VM Setup ==="
+AGENT_USER="agent"
 
-# System deps
-sudo apt-get update
-sudo apt-get install -y curl git build-essential unzip
+# =============================================================================
+# Phase 1: Root — install system deps, create user, hand off
+# =============================================================================
+if [ "$(id -u)" -eq 0 ]; then
+  echo "=== Personal Agent VM Setup (root) ==="
 
-# Node.js 22
-if ! command -v node &> /dev/null; then
-  curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-  sudo apt-get install -y nodejs
-fi
-echo "Node.js: $(node --version)"
+  # System deps
+  apt-get update
+  apt-get install -y curl git build-essential unzip
 
-# Claude Code
-if ! command -v claude &> /dev/null; then
-  sudo npm install -g @anthropic-ai/claude-code
-fi
+  # Node.js 22
+  if ! command -v node &> /dev/null; then
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+    apt-get install -y nodejs
+  fi
+  echo "Node.js: $(node --version)"
 
-if ! command -v claude &> /dev/null; then
-  echo "ERROR: Claude Code failed to install. Check npm output above."
-  exit 1
-fi
-echo "Claude Code: $(claude --version)"
+  # Claude Code
+  if ! command -v claude &> /dev/null; then
+    npm install -g @anthropic-ai/claude-code
+  fi
 
-# API key check
-if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+  if ! command -v claude &> /dev/null; then
+    echo "ERROR: Claude Code failed to install. Check npm output above."
+    exit 1
+  fi
+  echo "Claude Code: $(claude --version)"
+
+  # Create agent user
+  if ! id "$AGENT_USER" &>/dev/null; then
+    useradd -m -s /bin/bash "$AGENT_USER"
+    echo "Created user: $AGENT_USER"
+  fi
+
+  # Copy repo to agent user's home
+  REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  DEST="/home/$AGENT_USER/personal-agent"
+
+  if [ ! -d "$DEST" ]; then
+    cp -r "$REPO_DIR" "$DEST"
+  else
+    # Update existing copy
+    rsync -a --exclude='.git' "$REPO_DIR/" "$DEST/"
+  fi
+  chown -R "$AGENT_USER:$AGENT_USER" "$DEST"
+
   echo ""
-  echo "WARNING: ANTHROPIC_API_KEY is not set."
-  echo "  Set it in your shell:  export ANTHROPIC_API_KEY=sk-..."
-  echo "  Or add it to ~/.bashrc for persistence."
+  echo "=== Switching to $AGENT_USER user ==="
   echo ""
+
+  # Re-run as agent user for Phase 2
+  su - "$AGENT_USER" -c "cd $DEST && bash setup.sh"
+  exit 0
 fi
 
-# claudey alias (always runs from agent/ directory)
+# =============================================================================
+# Phase 2: Non-root (agent user) — workspace setup
+# =============================================================================
+echo "=== Personal Agent Setup (user: $(whoami)) ==="
+
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_DIR="$REPO_DIR/agent"
+
+# claudey alias
 if ! grep -q 'alias claudey' ~/.bashrc; then
   echo '' >> ~/.bashrc
-  echo '# Claude Code yolo mode — always runs from agent/ directory' >> ~/.bashrc
+  echo '# Claude Code — always runs from agent/ directory' >> ~/.bashrc
   echo "alias claudey=\"cd $AGENT_DIR && claude --dangerously-skip-permissions\"" >> ~/.bashrc
-  echo "Added claudey alias to ~/.bashrc (working dir: $AGENT_DIR)"
+  echo "Added claudey alias to ~/.bashrc"
 fi
 
 # Agent directories
@@ -75,12 +105,21 @@ if [ ! -f "$AGENT_DIR/memory/me.md" ]; then
 SEED
 fi
 
+# API key check
+if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+  echo ""
+  echo "WARNING: ANTHROPIC_API_KEY is not set."
+  echo "  Set it in your shell:  export ANTHROPIC_API_KEY=sk-..."
+  echo "  Or add it to ~/.bashrc for persistence."
+  echo ""
+fi
+
 echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Next steps:"
-echo "  1. Run: claude /login"
-echo "  2. Open the agent/ folder in VSCode via Remote SSH"
-echo "  3. Use Claude Code extension to chat"
+echo "  1. SSH in as '$AGENT_USER':  ssh $AGENT_USER@<your-vm-ip>"
+echo "  2. Run: claude /login"
+echo "  3. Open ~/personal-agent/agent/ in VSCode via Remote SSH"
 echo "  4. Or from terminal: claudey -p 'your prompt here'"
 echo ""

@@ -21,15 +21,17 @@ claudey                   ← alias: claude --dangerously-skip-permissions
 ## Setup
 
 ```bash
-# On a fresh Ubuntu 24.04 Hetzner VM
+# On a fresh Ubuntu 24.04 Hetzner VM (as root)
 git clone <this-repo> personal-agent
 cd personal-agent
-./setup.sh
+./setup.sh          # creates 'agent' user, installs deps, sets up workspace
 
-# Log in to Claude
+# SSH back in as the agent user
+ssh agent@<your-vm-ip>
+cd ~/personal-agent
 claude /login
 
-# Open agent/ in VSCode via Remote SSH, or:
+# Open ~/personal-agent/agent/ in VSCode via Remote SSH, or:
 claudey -p "learn from my drop folder"
 ```
 

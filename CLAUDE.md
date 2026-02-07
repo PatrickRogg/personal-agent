@@ -38,7 +38,8 @@ The VM Agent never sees the repo root, `AGENTS.md`, or the development instructi
 
 ## Setup Flow
 
-1. Clone this repo on the Hetzner VM
-2. Run `./setup.sh` to install dependencies
-3. Open `agent/` (not the repo root) in VSCode Remote SSH
-4. Claude Code loads `agent/AGENTS.md` and the skills automatically
+1. Clone this repo on the Hetzner VM (as root)
+2. Run `./setup.sh` — creates an `agent` user, installs Node.js + Claude Code, copies repo to `/home/agent/`
+3. SSH in as `agent` user, run `claude /login`
+4. Open `~/personal-agent/agent/` in VSCode Remote SSH
+5. Claude Code loads `agent/CLAUDE.md` and the skills automatically
