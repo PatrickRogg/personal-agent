@@ -13,6 +13,36 @@ if [ "$(id -u)" -eq 0 ]; then
   apt-get update
   apt-get install -y curl git build-essential unzip
 
+  # File-processing utilities
+  apt-get install -y \
+    poppler-utils \
+    tesseract-ocr tesseract-ocr-eng \
+    pandoc \
+    catdoc \
+    jq \
+    p7zip-full \
+    imagemagick \
+    python3-pip python3-venv \
+    libxml2-utils
+
+  # Python venv for agent file-processing scripts
+  AGENT_VENV="/opt/agent-venv"
+  if [ ! -d "$AGENT_VENV" ]; then
+    python3 -m venv "$AGENT_VENV"
+  fi
+  "$AGENT_VENV/bin/pip" install --upgrade pip
+  "$AGENT_VENV/bin/pip" install \
+    python-docx \
+    python-pptx \
+    openpyxl \
+    xlsx2csv \
+    pdfplumber \
+    Pillow \
+    pytesseract
+
+  # Make venv accessible to all users
+  chmod -R a+rX "$AGENT_VENV"
+
   # Node.js 22
   if ! command -v node &> /dev/null; then
     curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -89,6 +119,14 @@ if ! grep -q 'alias update=' ~/.bashrc; then
   echo '# Pull latest repo changes and sync workspace' >> ~/.bashrc
   echo "alias update=\"bash $REPO_DIR/update.sh\"" >> ~/.bashrc
   echo "Added update alias to ~/.bashrc"
+fi
+
+# Agent file-processing tools (Python venv)
+if ! grep -q 'agent-venv' ~/.bashrc; then
+  echo '' >> ~/.bashrc
+  echo '# Agent file-processing tools' >> ~/.bashrc
+  echo 'export PATH="/opt/agent-venv/bin:$PATH"' >> ~/.bashrc
+  echo "Added agent-venv to PATH"
 fi
 
 # Auto-navigate to agent workspace on login

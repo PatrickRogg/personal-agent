@@ -7,7 +7,17 @@ Learn from dropped files, links, or conversation. Uses a two-tier system:
 ## From dropped files
 
 1. List all files in `drop/`
-2. Read each file (supports .md, .txt, .pdf, images, any text format)
+2. Read each file based on its format:
+   - **Text files** (.md, .txt, .csv, .json, .yaml, .xml): Read directly
+   - **PDF files**: Read directly (use `pages` parameter for large PDFs)
+   - **Images**: Read directly (you see them visually)
+   - **Office documents**: Convert first using scripts in `scripts/defaults/`:
+     - `.docx` → `bash scripts/defaults/docx-to-text.sh drop/<file>`
+     - `.pptx` → `bash scripts/defaults/pptx-to-text.sh drop/<file>`
+     - `.xlsx` → `bash scripts/defaults/xlsx-to-csv.sh drop/<file>`
+     - `.xls` → `bash scripts/defaults/xls-to-csv.sh drop/<file>`
+   - **Archives** (.zip, .tar.gz, .7z, .rar): Extract first with `bash scripts/defaults/extract-archive.sh drop/<file> drop/extracted/`, then process contents
+   - **Unknown formats**: Run `bash scripts/defaults/file-info.sh drop/<file>` to identify, then decide
 3. For each file:
    a. **Archive** — move or copy the raw file to `knowledge/` (preserve original as-is)
    b. **Distill** — create a memory entry in `memory/<topic>.md` containing:

@@ -41,10 +41,60 @@ else
   echo "No git remote found, skipping fetch."
 fi
 
+# Install missing dependencies (requires sudo, skips if not available)
+install_deps() {
+  local NEEDED_PKGS=()
+  local APT_PKGS=(poppler-utils tesseract-ocr tesseract-ocr-eng pandoc catdoc jq p7zip-full imagemagick python3-pip python3-venv libxml2-utils)
+
+  for pkg in "${APT_PKGS[@]}"; do
+    if ! dpkg -s "$pkg" &>/dev/null; then
+      NEEDED_PKGS+=("$pkg")
+    fi
+  done
+
+  if [ ${#NEEDED_PKGS[@]} -gt 0 ]; then
+    echo "Installing missing packages: ${NEEDED_PKGS[*]}"
+    sudo apt-get update -qq
+    sudo apt-get install -y "${NEEDED_PKGS[@]}"
+  fi
+
+  # Python venv for file-processing scripts
+  AGENT_VENV="/opt/agent-venv"
+  if [ ! -d "$AGENT_VENV" ]; then
+    echo "Creating Python venv for file-processing tools..."
+    sudo python3 -m venv "$AGENT_VENV"
+    sudo chmod -R a+rX "$AGENT_VENV"
+  fi
+
+  # Install/update Python packages
+  local PIP_PKGS=(python-docx python-pptx openpyxl xlsx2csv pdfplumber Pillow pytesseract)
+  local MISSING_PIP=false
+  for pkg in "${PIP_PKGS[@]}"; do
+    if ! "$AGENT_VENV/bin/pip" show "$pkg" &>/dev/null; then
+      MISSING_PIP=true
+      break
+    fi
+  done
+
+  if [ "$MISSING_PIP" = true ]; then
+    echo "Installing missing Python packages..."
+    sudo "$AGENT_VENV/bin/pip" install --upgrade pip -q
+    sudo "$AGENT_VENV/bin/pip" install "${PIP_PKGS[@]}" -q
+    sudo chmod -R a+rX "$AGENT_VENV"
+  fi
+}
+
+if command -v sudo &>/dev/null; then
+  install_deps || echo "Note: Some dependencies could not be installed (may need root). Run setup.sh as root to install all dependencies."
+fi
+
 # Ensure workspace directories exist (idempotent)
 for dir in drop knowledge memory output scripts scripts/defaults; do
   mkdir -p "$AGENT_DIR/$dir"
 done
+
+# Make default scripts executable
+chmod +x "$AGENT_DIR/scripts/defaults/"*.sh 2>/dev/null || true
 
 # Seed memory files (only if missing)
 if [ ! -f "$AGENT_DIR/memory/_index.md" ]; then

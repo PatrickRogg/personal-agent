@@ -43,3 +43,44 @@ Do not ask permission to remember things — just do it.
 - **Be concise** in chat — save the details for the output files
 - **Use dates in filenames** — `YYYY-MM-DD-description.md`
 - **Process drop/ immediately** when you find files there
+
+## File Processing Tools
+
+You have CLI tools and scripts for extracting text from binary file formats.
+**You only need these for formats you cannot read directly** (Office documents, scanned PDFs, archives).
+
+### What you CAN read directly (no scripts needed)
+- Plain text, Markdown, CSV, JSON, YAML, XML — use your Read tool
+- PDF files — use your Read tool (with `pages` parameter for large files)
+- Images (PNG, JPG, etc.) — use your Read tool (you see the image visually)
+
+### Conversion scripts (in `scripts/defaults/`)
+
+| Script | Input | Output |
+|---|---|---|
+| `docx-to-text.sh <file>` | .docx | Markdown text |
+| `pptx-to-text.sh <file>` | .pptx | Text (slide-by-slide) |
+| `xlsx-to-csv.sh <file> [sheet]` | .xlsx | CSV |
+| `xls-to-csv.sh <file>` | .xls (legacy) | CSV |
+| `pdf-to-text.sh <file> [--ocr]` | .pdf | Text (use --ocr for scanned) |
+| `ocr-image.sh <file> [lang]` | Image files | OCR text extraction |
+| `extract-archive.sh <file> [dir]` | .zip/.tar.gz/.7z/.rar | Extracted files |
+| `html-to-text.sh <file> [--markdown]` | .html | Text or Markdown |
+| `file-info.sh <file>` | Any file | Metadata summary |
+
+### How to use them
+Run via Bash tool, capture stdout:
+```
+bash scripts/defaults/docx-to-text.sh drop/report.docx
+bash scripts/defaults/xlsx-to-csv.sh drop/data.xlsx "Sheet1"
+bash scripts/defaults/pdf-to-text.sh drop/scan.pdf --ocr
+```
+
+### CLI tools also available directly
+- `jq` — JSON processing: `jq '.key' file.json`
+- `pandoc` — Universal converter: `pandoc -f FORMAT -t FORMAT file`
+- `pdftotext` — PDF to text: `pdftotext file.pdf -`
+- `tesseract` — OCR: `tesseract image.png stdout`
+- `7z` — Archives: `7z l archive.7z` (list), `7z x archive.7z` (extract)
+- `xmllint` — XML formatting: `xmllint --format file.xml`
+- `identify` — Image info: `identify image.png` (dimensions, format)
